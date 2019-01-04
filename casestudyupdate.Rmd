@@ -1,54 +1,231 @@
 ---
-title: "casestudy"
-author: "Daniel M. Turner"
+title: "Frothy Head Brewing Analysis"
+author: "Daniel M. Turner, Pankaj Kumar, Kay Ayala"
 date: "December 17, 2018"
 output: html_document
+params: 
+  beer_file_path: ./Analysis/data/Beers.csv
+  brewery_file_path: ./Analysis/data/Breweries.csv
+  echo: FALSE
+  kable_align: 'l'
+  
+#Please install!!
+#install.packages("devtools")
+#devtools::install_github("slowkow/ggrepel")
+
+  
 ---
 
-0.
-```{r}
-##load data
-beer <- read.csv("C:\\Users\\DMT\\Documents\\masters\\semester1\\dds402\\CaseStudy_2_2_2_2_2_2\\Beers.csv", header = TRUE, sep = ",")
 
-brewery <- read.csv("C:\\Users\\DMT\\Documents\\masters\\semester1\\dds402\\CaseStudy_2_2_2_2_2_2\\Breweries.csv", header = TRUE, sep = ",")
+In response to Frothy Head Brewing’s inquiry on beer and breweries, we have examined the provided datasets and produced metrics and visualizations in order to gain insight into beer production in the United States. 
+
+We have provided a table and a map of how many breweries there are in each state. From these we can get an idea of the distribution of breweries across the country.
+
+
+```{r echo =params$echo }
+library(knitr)
+beer <- read.csv(params$beer_file_path, header = TRUE, sep = ",")
+brewery <- read.csv(params$brewery_file_path, header = TRUE, sep = ",")
+
+```
+
+```{r echo =params$echo }
+
+# for data cleaning later
+
+#     Change Brewery_Name and Beer_Name to describe the right columns
+#     Change Brewery_id and Beer_ID to be the same capitalization
+#     Scrub duplicate entries
+#     Check for any state abrevations not in the state abreviation list and verify all are capitalized correctly 
+#     
 
 ```
 
 
-1.	How many breweries are present in each state?
-```{r}
+```{r include =params$echo}
+#install.packages("devtools")
+#devtools::install_github("slowkow/ggrepel")
+
 ##count by state
+library(kableExtra)
+library(dplyr)
+library(usmap)
+library(ggplot2)
+library(ggrepel)
+library(stringr)
+
+my_plot_us= function (regions = c("states", "state", "counties", "county"), 
+                      include = c(), data = data.frame(), values = "values", theme = theme_map(), 
+                      lines = "black", labels = FALSE, label_color = "black") 
+{
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("Please install `ggplot2`. Use: install.packages(\"ggplot2\")")
+  }
+  regions_ <- match.arg(regions)
+  if (nrow(data) == 0) {
+    map_df <- us_map(regions = regions_, include = include)
+    polygon_layer <- ggplot2::geom_polygon(ggplot2::aes(x = map_df$long, 
+                                                        y = map_df$lat, group = map_df$group), colour = lines, 
+                                           fill = "white", size = 0.4)
+  }
+  else {
+    map_df <- map_with_data(data, values = values, include = include)
+    polygon_layer <- ggplot2::geom_polygon(ggplot2::aes(x = map_df$long, 
+                                                        y = map_df$lat, group = map_df$group, fill = map_df[, 
+                                                                                                            values]), colour = lines, size = 0.4)
+  }
+  if (labels) {
+    if (regions_ == "county" | regions_ == "counties") {
+      warning("`labels` is currently only supported for state maps. It has no effect on county maps.")
+      label_layer <- ggplot2::geom_blank()
+    }
+    else {
+      centroid_labels <- utils::read.csv(system.file("extdata", 
+                                                     paste0("us_", regions_, "_centroids.csv"), package = "usmap"), 
+                                         colClasses = c("numeric", "numeric", "character", 
+                                                        "character", "character"), stringsAsFactors = FALSE)
+      centroid_labels=centroid_labels[order(centroid_labels$abbr),]
+      centroid_labels=merge(centroid_labels, data, by.x='fips', by.y='fips')
+      if (length(include) > 0) {
+        centroid_labels <- centroid_labels[centroid_labels$full %in% 
+                                             include | centroid_labels$abbr %in% include | 
+                                             centroid_labels$fips %in% include, ]
+      }
+      label_layer <- ggrepel::geom_text_repel(data = centroid_labels, hjust = 0.5, point.padding = NA,
+                                               position = position_dodge(width=0.3),  size=3,
+                                        ggplot2::aes(x = centroid_labels$x, y = centroid_labels$y, 
+                                                     label = paste(centroid_labels$abbr, centroid_labels$brewsByState)), colour = label_color)
+    }
+  }
+  else {
+    label_layer <- ggplot2::geom_blank()
+  }
+  ggplot2::ggplot(data = map_df) + polygon_layer + label_layer + 
+    ggplot2::coord_equal() + theme
+}
+
+
+theme_map <- function(base_size = 9, base_family = "") {
+  elementBlank = ggplot2::element_blank()
+  `%+replace%` <- ggplot2::`%+replace%`
+  unit <- ggplot2::unit
+  
+  ggplot2::theme_bw(base_size = base_size, base_family = base_family) %+replace%
+    ggplot2::theme(axis.line = elementBlank,
+                   axis.text = elementBlank,
+                   axis.ticks = elementBlank,
+                   axis.title = elementBlank,
+                   panel.background = elementBlank,
+                   panel.border = elementBlank,
+                   panel.grid = elementBlank,
+                   panel.spacing = unit(0, "lines"),
+                   plot.background = elementBlank,
+                   legend.justification = c(0, 0),
+                   legend.position = c(0, 0))
+}
+
 
 brewsByState = summary(brewery$State)
+state_brew= data.frame(brewsByState, check.names = FALSE, stringsAsFactors = TRUE)
+state_brew$state=row.names(state_brew)
+state_brew$fips = sapply(as.character(str_trim(state_brew$state)), fips)
+
+```
+
+###  Breweries per State
+
+
+```{r echo =params$echo}
+
+kable(list( state_brew[c(1:17), c('state','brewsByState')], state_brew[c(18:34), c('state','brewsByState')], state_brew[c(35:50), c('state','brewsByState')]), align = params$kable_align, padding = 6L, row.names = FALSE , col.names =c('State__________', 'Breweries')) %>% kable_styling()
 
 
 ```
 
-2.	Merge beer data with the breweries data. Print the first 6 observations and the last six observations to check the merged file.
-```{r}
+#### Statewise Brewery Map 
+```{r echo =params$echo}
+
+my_plot_us(data = state_brew, values = "brewsByState", label_color = "black", lines = "#1b2f47", labels = TRUE)+
+  scale_fill_continuous(name= "number of breweries" , low = "#6bb0f1", high = "#1b2f47")+
+    theme(legend.position = "right")
+     
+
+```
+
+### Dataset
+
+In order to get an idea of the data in the provided datasets we show the head and tail of the merged data. 
+
+##### Dataset Head
+
+```{r echo =params$echo}
 ##data merge and check.clean data?
 
 colnames(brewery)[colnames(brewery)=="Brew_ID"] <- "Brewery_id"
-brewNBeer <- merge(beer, brewery, by = "Brewery_id")
-head(brewNBeer)
-tail(brewNBeer)
+brewNBeer <- merge(beer, brewery, by = "Brewery_id" , suffixes = c('_beer', '_brewery'))
+names(brewNBeer)= c("Brewery_id","Brewery_Name", "Beer_ID" ,"ABV" , "IBU",  "Style","Ounces","Beer_Name" ,"City","State" )
+kable(head(brewNBeer),align = params$kable_align) %>% kable_styling( position = "left")
+
+colnames(brewNBeer)[colnames(brewNBeer)=="Brewery_id"] <- "Brewery_ID"
+colnames(brewNBeer)[colnames(brewNBeer)=="Brewery_Name"] <- "Beer_Name1"
+colnames(brewNBeer)[colnames(brewNBeer)=="Beer_Name"] <- "Brewery_Name"
+colnames(brewNBeer)[colnames(brewNBeer)=="Beer_Name1"] <- "Beer_Name"
 
 
 ```
 
-3.	Report the number of NA's in each column.
-```{r}
+##### Dataset Tail
+
+```{r echo =params$echo}
+
+kable(tail(brewNBeer), align = params$kable_align) %>% kable_styling(bootstrap_options = "striped", full_width = F) 
+
+
+```
+
+### Missing Values
+
+It is important to note there are missing values in the data and IBU has the most missing values. This is the sum of missing values for each variable. 
+
+```{r echo =params$echo}
+
 ##after clean, only missing bitterness? beer types?
-colSums(is.na(brewNBeer))
+kable(colSums(is.na(brewNBeer)),align = params$kable_align, col.names = c('Column Name \t  # NA')) %>% kable_styling()
 
+# Loading necessary packages for graphing
+library(RColorBrewer)
+
+columnNames = colnames(brewNBeer)
+columnNames[columnNames=="Brewery_ID"] <- "Brewery ID"
+columnNames[columnNames=="Beer_Name"] <- "Beer Name"
+columnNames[columnNames=="Beer_ID"] <- "Beer ID"
+columnNames[columnNames=="Brewery_Name"] <- "Brewery Name"
+
+missingValues = colSums(is.na(brewNBeer))
+
+
+# Plots a bar chart for missing values in each variable
+print(ggplot() +
+  aes(x= columnNames, y=missingValues) + 
+  geom_col(width = 0.9, show.legend = TRUE, 
+           color= "#89b0d0", fill = "#89b0d0") +
+  ggtitle("Number of Missing Values per Variable") +
+  theme(plot.title = element_text(hjust = 0.5)) + 
+  ylab("Variable") +
+  xlab("Number of Missing Values") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+  )
 
 ```
 
-4.	Compute the median alcohol content and international bitterness unit for each state. Plot a bar chart to compare.
-```{r}
+### Alcohol Content Distribution by State
+
+In order to get an idea of what alcohol content and bitterness preferences are by state we provide bar charts of ABV and IBU. This may be of use when considering what type of beers to be making in each state. 
+
+```{r echo =params$echo}
 ##find medians by state. Do twice? once counting NA and once not counting NA
-#alcy<-tapply(brewNBeer$ABV, INDEX=brewNBeer$State, FUN=median)
-#bitter<-tapply(brewNBeer$IBU, INDEX=brewNBeer$State, FUN=median)
+alcy<-tapply(brewNBeer$ABV, INDEX=brewNBeer$State, FUN=median)
+bitter<-tapply(brewNBeer$IBU, INDEX=brewNBeer$State, FUN=median)
 
 #remove na for data
 alcy<-tapply(brewNBeer$ABV[!is.na(brewNBeer$ABV)], INDEX=brewNBeer$State[!is.na(brewNBeer$ABV)], FUN=median)
@@ -57,49 +234,85 @@ bitter<-tapply(brewNBeer$IBU[!is.na(brewNBeer$IBU)], INDEX=brewNBeer$State[!is.n
 library(ggplot2)
 
 df_abv <- data.frame(state=names(alcy),abv = alcy)
-ggplot(data=df_abv, aes(x=state, y=abv)) +
-    geom_bar(stat="identity")+ coord_flip()+
-    geom_bar(stat="identity", color="blue", fill="green")+
-    geom_text(aes(label=abv), hjust=-2, size=2)+
-    theme_minimal()
+
+ggplot(data=df_abv, aes(x=state, y=abv )) +
+    geom_col( color="blue", fill="green")+
+  theme(axis.text.x=element_text(angle=90, hjust=1))
+
+```
+
+
+### Bitterness Distribution by State
+
+```{r echo =params$echo}
 
 bitter[is.na(bitter)] <- 0
 df_ibu <- data.frame(state=names(bitter),ibu = bitter)
 ggplot(data=df_ibu, aes(x=state, y=ibu)) +
-    geom_bar(stat="identity")+ coord_flip()+
-    geom_bar(stat="identity", color="blue", fill="green")+
-    geom_text(aes(label=ibu), hjust=-2, size=2)+
-    theme_minimal()
+    geom_col( color="blue", fill="green")+
+  theme(axis.text.x=element_text(angle=90, hjust=1))
+
 
 ```
 
-5.	Which state has the maximum alcoholic (ABV) beer? Which state has the most bitter (IBU) beer?
-```{r}
+### State with the Most Alcoholic ABV Beer and Spread of Alcohol Content ABV
+
+The state with the most alcoholic beer was Colorado. 
+
+```{r echo =params$echo}
 ##find biggest numbers. NBD
-brewNBeer[which.max(brewNBeer$ABV),] #alcohol
-brewNBeer[which.max(brewNBeer$IBU),] #bitterness
+state_data=brewNBeer[which.max(brewNBeer$ABV),]
+state_data$State= cell_spec(state_data$State, "html",background  = "red")
+kable(format = "html", escape = F, state_data,align = params$kable_align) %>% kable_styling() #alcohol
+```
 
+
+The most produced beers follow the following spread of alcohol content summary. It would be most recommended to produce beer within the first and third quartiles of alcohol content.
+
+```{r echo =params$echo}
+##summarize numbers
+abv_summary=summary(brewNBeer$ABV)
+abv_summary
+boxplot(brewNBeer$ABV,
+        main = "Alcohol Content ABV in US Beers",
+        xlab = "Alcohol Content ABV",
+        col = "#758E6E",
+        border = "#758E6E",
+        horizontal =TRUE)
 
 ```
 
-6.	Summary statistics for the ABV variable.
-```{r}
-##summarize numbers. box plot?
-summary(brewNBeer$ABV)
+### State with the Most Bitter IBU Beer and Spread of Bitterness Levels IBU
+
+The state with the most bitter beer was Oregon.
+
+```{r echo =params$echo}
+state_data=brewNBeer[which.max(brewNBeer$IBU),]
+state_data$State= cell_spec(state_data$State, "html",background  = "red")
+kable(format = "html", escape = F,state_data ,align = params$kable_align) %>% kable_styling() #bitterness
+
+abv_summary=summary(brewNBeer$IBU)
+abv_summary
+
+boxplot(brewNBeer$IBU,
+        main = "Bitterness IBU in US Beers",
+        xlab = "Bitterness IBU",
+        col = "#758E6E",
+        border = "#758E6E",
+        horizontal =TRUE)
 
 ```
 
-7.	Is there an apparent relationship between the bitterness of the beer and its alcoholic content? Draw a scatter plot.
-```{r}
+
+### Relationship between the Bitterness and Alcoholic Content of Each Beer
+
+We looked to see if we could find a relationship between bitterness and alcohol content by producing a scatterplot. More alcoholic beers had a the full range of bitterness, but less alcoholic beers tended to have low bitterness. 
+
+
+```{r echo =params$echo}
 ##plot ibu vs abv. nbd
-plot(brewNBeer$ABV,brewNBeer$IBU)# ugly but a starting point
+plot(brewNBeer$ABV,brewNBeer$IBU) # ugly but a starting point
 
 
 ```
 
-prep develop and present
-```{r}
-##1-7, describe results in common speak
-
-
-```
