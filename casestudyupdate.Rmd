@@ -306,13 +306,48 @@ boxplot(brewNBeer$IBU,
 
 ### Relationship between the Bitterness and Alcoholic Content of Each Beer
 
+#### Pearson Correlation between ABV and IBU
+
+``` {r echo =params$echo}
+cor(brewNBeer$ABV,brewNBeer$IBU, use ="na.or.complete", method="pearson")
+  
+``` 
+
 We looked to see if we could find a relationship between bitterness and alcohol content by producing a scatterplot. More alcoholic beers had a the full range of bitterness, but less alcoholic beers tended to have low bitterness. 
 
 
 ```{r echo =params$echo}
 ##plot ibu vs abv. nbd
-plot(brewNBeer$ABV,brewNBeer$IBU) # ugly but a starting point
 
+#setwd('/Users/pankaj/dev/git/smu/Brewery-Analysis')
+#state_regions =read.csv('./us_state_region.csv')
+#brewNBeer$State=as.character(brewNBeer$State)
+#state_regions$State.Code=as.character(state_regions$State.Code)
+brewNBeer$State=str_trim(as.character(brewNBeer$State) )
+#state_regions$State.Code=str_trim(as.character(state_regions$State.Code) )
+#region_bb = merge(brewNBeer, state_regions, by.x= 'State' , by.y = 'State.Code')
+
+ggplot(brewNBeer, aes(x=ABV , y=IBU))+
+  geom_point(mapping= aes(color = State))+
+  theme_classic()+
+  stat_smooth(method = lm)
+        #facet_wrap(~ Division)
+
+plot(brewNBeer$ABV,brewNBeer$IBU)# ugly but a starting point
+```
+
+``` {r echo =params$echo }
+t.test(brewNBeer[brewNBeer$State=='TX',]$ABV, 
+       brewNBeer[brewNBeer$State=='CO',]$ABV, 
+       var.equal = TRUE,
+       #paired=TRUE, 
+       conf.level=0.95)
+
+t.test(brewNBeer[brewNBeer$State=='TX',]$ABV, 
+       brewNBeer[brewNBeer$State=='OR',]$ABV,  
+       #paired=TRUE, 
+       var.equal = TRUE,
+       conf.level=0.95)
 
 ```
 
