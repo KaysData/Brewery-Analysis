@@ -1,2 +1,7 @@
 #1. rename columns in merged data
-#2.
+#2. Check and make sure all duplicate entries were scrubbed
+#6. Makes sure data has been adiquately cleaned
+#3. Beer_Name and Brewery_Name are switched
+#4. Question 1: Make sure the number of breweries per state is the number of breweries rather than the number of beers. 
+#5. Question 7: "Make your best judgment of a relationship and EXPLAIN your answer." - Assign.
+#7. Change color on bar charts. 
