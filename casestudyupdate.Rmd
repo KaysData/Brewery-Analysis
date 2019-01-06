@@ -2,7 +2,10 @@
 title: "Frothy Head Brewing Analysis"
 author: "Daniel M. Turner, Pankaj Kumar, Kay Ayala"
 date: "December 17, 2018"
-output: html_document
+output:
+  html_document:  
+    toc: true    
+    theme: united 
 params: 
   beer_file_path: ./Analysis/data/Beers.csv
   brewery_file_path: ./Analysis/data/Breweries.csv
@@ -346,6 +349,10 @@ ggplot(brewNBeer, aes(x=ABV , y=IBU))+
 ```
 
 ``` {r echo=FALSE}
+#t.test(brewNBeer$ABV,
+#       brewNBeer$IBU,
+#       paired=TRUE,
+#       conf.level=0.95)
 
 #t.test(brewNBeer[brewNBeer$State=='TX',]$ABV, 
 #       brewNBeer[brewNBeer$State=='CO',]$ABV, 
