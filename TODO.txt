@@ -1,6 +1,0 @@
-
-#1. Check and make sure all duplicate entries were scrubbed
-#2. Makes sure data has been adiquately cleaned
-
-
-
