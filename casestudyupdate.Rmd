@@ -347,24 +347,3 @@ ggplot(brewNBeer, aes(x=ABV , y=IBU))+
         #facet_wrap(~ Division)
 
 ```
-
-``` {r echo=FALSE}
-#t.test(brewNBeer$ABV,
-#       brewNBeer$IBU,
-#       paired=TRUE,
-#       conf.level=0.95)
-
-#t.test(brewNBeer[brewNBeer$State=='TX',]$ABV, 
-#       brewNBeer[brewNBeer$State=='CO',]$ABV, 
-#       var.equal = TRUE,
-#       #paired=TRUE, 
-#       conf.level=0.95)
-
-#t.test(brewNBeer[brewNBeer$State=='TX',]$ABV, 
-#       brewNBeer[brewNBeer$State=='OR',]$ABV,  
-#       #paired=TRUE, 
-#       var.equal = TRUE,
-#       conf.level=0.95)
-
-```
-
